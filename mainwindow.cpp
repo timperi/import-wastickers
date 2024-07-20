@@ -8,6 +8,7 @@
 #include <QImage>
 #include <QLabel>
 #include <QLayout>
+#include <QMessageBox>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPixmap>
@@ -72,15 +73,22 @@ void MainWindow::ImportWaStickers() {
   QString filter;
   auto imageList =
       QFileDialog::getOpenFileNames(this, "Select images", baseUrl, filter);
-  qDebug() << imageList;
+
+  auto info = imageList.join("\n");
+  QMessageBox::information(this, "You selected:", info);
+
   if (!imageList.isEmpty()) {
     auto pack = imageList.first();
+    QMessageBox::information(this, "Info",
+                             QString("Trying to open %1").arg(pack));
     auto zFile = unzOpen64(pack.toUtf8().data());
     if (zFile) {
       unz_global_info globalInfo;
       if (unzGetGlobalInfo(zFile, &globalInfo) == UNZ_OK) {
         auto numEntries = globalInfo.number_entry;
-        qDebug() << "Number of entries in global info:" << numEntries;
+        QMessageBox::information(
+            this, "Info",
+            QString("Number of entries in global info: %1").arg(numEntries));
 
         clearLayout(m_imageLayout);
 
@@ -97,13 +105,11 @@ void MainWindow::ImportWaStickers() {
             // Check if this entry is a directory or file.
             if (fname.endsWith('/')) {
               // Entry is a directory, so skip it
-              qDebug() << "dir:" << fname;
             } else if (fname.endsWith(".webp")) {
               quint32 uncompressedSize = fileInfo.uncompressed_size;
               qDebug() << "Found .webp file:" << fname
                        << "compressed size:" << fileInfo.compressed_size
                        << "uncompressed size:" << uncompressedSize;
-
               if (unzOpenCurrentFile(zFile) == UNZ_OK) {
                 QByteArray readBuffer(uncompressedSize, 0);
                 if (unzReadCurrentFile(zFile, readBuffer.data(),
@@ -122,37 +128,49 @@ void MainWindow::ImportWaStickers() {
                     auto name = info.baseName();
                     rawImages[name] = readBuffer;
                   } else {
-                    qDebug() << "ERROR cannot load image from data" << filename;
+                    QMessageBox::information(
+                        this, "Info",
+                        QString("cannot load image from data: %1").arg(fname));
                   }
                 } else {
-                  qDebug() << "ERROR unzReadCurrentFile failed" << filename;
+                  QMessageBox::information(
+                      this, "Info",
+                      QString("unzReadCurrentFile failed: %1").arg(fname));
                 }
               } else {
-                qDebug() << "ERROR opening file" << filename;
+                QMessageBox::information(
+                    this, "Info", QString("Cannot open file: %1").arg(fname));
               }
             } else {
-              qDebug() << "file is not .webp" << fname;
+              // QMessageBox::information(this, "Info", QString("file is not
+              // .webp: %1").arg(fname));
             }
 
             if (unzGoToNextFile(zFile) != UNZ_OK) {
-              qDebug() << "ERROR going to next file";
+              QMessageBox::information(
+                  this, "Error",
+                  QString("cannot go to next file: %1").arg(fname));
               break;
             }
           } else {
-            qDebug() << "ERROR in unzGetCurrentFileInfo64" << pack;
+            QMessageBox::information(
+                this, "Error",
+                QString("cannot unzGetCurrentFileInfo64: %1").arg(pack));
             break;
           }
         }
       } else {
-        qDebug() << "ERROR in unzGetGlobalInfo" << pack;
+        QMessageBox::information(this, "Error",
+                                 QString("unzGetGlobalInfo %1").arg(pack));
       }
 
       unzClose(zFile);
     } else {
-      qDebug() << "ERROR opening zip file" << pack;
+      QMessageBox::information(this, "Error",
+                               QString("Cannot open %1").arg(pack));
     }
   } else {
-    qDebug() << "Nothing selected";
+    QMessageBox::information(this, "Error", "Nothing selected");
   }
 }
 
