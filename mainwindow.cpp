@@ -67,12 +67,14 @@ void MainWindow::ImportWaStickers() {
   qDebug() << "zlib version:" << zlibVer;
 
   auto locations =
-      QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation);
+      QStandardPaths::standardLocations(QStandardPaths::PicturesLocation);
   QString baseUrl = locations.first();
   QString filter;
-  auto pack =
-      QFileDialog::getOpenFileName(this, "Open .wastickers", baseUrl, filter);
-  if (!pack.isEmpty()) {
+  auto imageList =
+      QFileDialog::getOpenFileNames(this, "Select images", baseUrl, filter);
+  qDebug() << imageList;
+  if (!imageList.isEmpty()) {
+    auto pack = imageList.first();
     auto zFile = unzOpen64(pack.toUtf8().data());
     if (zFile) {
       unz_global_info globalInfo;
@@ -149,6 +151,8 @@ void MainWindow::ImportWaStickers() {
     } else {
       qDebug() << "ERROR opening zip file" << pack;
     }
+  } else {
+    qDebug() << "Nothing selected";
   }
 }
 
