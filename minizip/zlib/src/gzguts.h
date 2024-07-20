@@ -29,6 +29,10 @@
 #  endif
 #endif
 
+#ifdef __APPLE__
+#include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include "zlib.h"
 #ifdef STDC
